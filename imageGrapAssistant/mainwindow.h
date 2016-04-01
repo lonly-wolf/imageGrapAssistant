@@ -50,16 +50,17 @@ private slots:
     void on_saveCommand_clicked();
     void on_actionShowFunction_triggered(); //调用工作台
 
-    void enabledExecute();
+    void isMySerialOpen();
 
 private:
     Ui::MainWindow *ui;
     QSerialPort *mySerialPort;
     QByteArray requestData;//串口返回数据
+    QVector<QByteArray> sendData;//发送数据数组
+    QVector<QByteArray> commonData;//一般发送数据数组
     QTimer *receiveTimer; //串口数据接收计时器
     QTimer *sendTimer;//串口数据发送计时器
     QTimer *pointTimer;//坐标实时追踪刷新
-    QTimer *executeCommandT; //检测命令运行间隔
     aboutDialog *myDialog;
     bool isOpenSerial;
     QPoint nowMousePoint;

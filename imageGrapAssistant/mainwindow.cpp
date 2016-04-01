@@ -30,7 +30,6 @@ MainWindow::MainWindow(QWidget *parent) :
     mySerialPort=new QSerialPort(this);
     receiveTimer=new QTimer(this);
     sendTimer=new QTimer(this);
-    executeCommandT=new QTimer(this);
     mySettingRead=new QSettings(this);
     mySettingSave=new QSettings(this);
     myDialog=new aboutDialog(this);
@@ -65,9 +64,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setPulseButton->setStyleSheet("border:2px groove gray;border-radius:10px;padding:2px 4px;");
     //绑定信号槽
    // connect(receiveTimer,SIGNAL(timeout()),this,SLOT(updateDate()));
+    connect(mySerialPort,SIGNAL(aboutToClose()),this,SLOT(isMySerialOpen()));//串口状态监测
     connect(mySerialPort,SIGNAL(readyRead()),this,SLOT(updateDate())); //实时数据刷新
     connect(receiveTimer,SIGNAL(timeout()),this,SLOT(followCurrentPoint())); //实时刷新坐标
-    connect(executeCommandT,SIGNAL(timeout()),this,SLOT(enabledExecute())); //实时刷新坐标
+   // connect(executeCommandT,SIGNAL(timeout()),this,SLOT(enabledExecute())); //实时刷新坐标
     //方法调用
     scanAvaliableSerial();
     ui->groupBox_3->show();
@@ -125,6 +125,7 @@ void MainWindow::on_openSerial_clicked()
          ui->dataBitCB->setEnabled(false);
          ui->stopBitCB->setEnabled(false);
          isOpenSerial=true;
+         receiveTimer->start(1000); //开启消息发送timer------------------------------------------------->
          ui->openSerial->setText(QStringLiteral("关闭串口"));
          mySerialPort->setPortName(ui->serialCB->currentText());
          mySerialPort->open(QIODevice::ReadWrite);
@@ -185,7 +186,8 @@ void MainWindow::on_openSerial_clicked()
                    data[2]=v>>8  & 0xff;
                    data[3]=v & 0xff;
                    qDebug()<<data;
-                   mySerialPort->write(data);
+                  // mySerialPort->write(data);
+                   sendData.append(data);
 
           }
           else{
@@ -203,10 +205,11 @@ void MainWindow::on_openSerial_clicked()
         ui->updateSerialButton->setEnabled(true);
         ui->dataBitCB->setEnabled(true);
         ui->stopBitCB->setEnabled(true);
+        ui->openSerial->setText(QStringLiteral("打开串口"));
+        ui->statusBar->showMessage(QStringLiteral("端口关闭"));
+        mySerialPort->close();
+        receiveTimer->stop();
 
-         ui->openSerial->setText(QStringLiteral("打开串口"));
-         ui->statusBar->showMessage(QStringLiteral("端口关闭"));
-         mySerialPort->close();
     }
 }
 
@@ -219,12 +222,14 @@ void MainWindow::on_sendData_clicked()
     if(mySerialPort->isOpen()){
         if(ui->isHexSend){
             //十六进制发送
-            mySerialPort->write(QByteArray::fromHex(sendText));
+           // mySerialPort->write(QByteArray::fromHex(sendText));
+            sendData.append(QByteArray::fromHex(sendText));
 
         }
         else{
             //非十六进制发送
-            mySerialPort->write(sendText);
+           // mySerialPort->write(sendText);
+            sendData.append(sendText);
 
         }
 
@@ -296,7 +301,8 @@ void MainWindow::updateDate()
                      data[2]=v>>8  & 0xff;
                      data[3]=v & 0xff;
                      qDebug()<<data;
-                     mySerialPort->write(data);
+                    // mySerialPort->write(data);
+                     sendData.append(data);
         }
     }
 }
@@ -342,19 +348,18 @@ void MainWindow::initImageWidget(int x, int y)
 //寻找home
 void MainWindow::on_homeButton_clicked()
 {
-    if(enableToExecute){
+
         qDebug()<<"home is execute";
         QByteArray data("\x54\x02",2);
         if(mySerialPort->isOpen()){
 
-            mySerialPort->write(data);
+            //mySerialPort->write(data);
+            sendData.append(data);
         }
         else{
             QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
         }
-        executeCommandT->start(500);
-    }
-    enableToExecute=false;
+
 
 
 
@@ -363,13 +368,14 @@ void MainWindow::on_homeButton_clicked()
 //y轴正向连续驱动
 void MainWindow::on_yAddButton_clicked()
 {
-    if(enableToExecute){
+
         QByteArray sendText("\x4e\x02\x22",3);
 
         if(mySerialPort->isOpen()){
             //连续驱动
             if(ui->constantCheckBox->isChecked()){
-                mySerialPort->write(sendText);
+               // mySerialPort->write(sendText);
+                sendData.append(sendText);
             }
             else{
                 int v = ui->pulseSpinBox->value();
@@ -383,7 +389,8 @@ void MainWindow::on_yAddButton_clicked()
                 data[6]=v>>8  & 0xff;
                 data[7]=v & 0xff;
                 qDebug()<<data;
-                mySerialPort->write(data);
+                //mySerialPort->write(data);
+                sendData.append(data);
             }
 
         }
@@ -392,20 +399,19 @@ void MainWindow::on_yAddButton_clicked()
         }
 
 
-        executeCommandT->start(500);
-    }
-    enableToExecute=false;
+
 
 }
 
 //y轴负向连续驱动
 void MainWindow::on_ySubButton_clicked()
 {
-     if(enableToExecute){
+
          QByteArray sendText("\x4e\x02\x23",3);
          if(mySerialPort->isOpen()){
              if(ui->constantCheckBox->isChecked()){
-                 mySerialPort->write(sendText);
+                // mySerialPort->write(sendText);
+                 sendData.append(sendText);
              }
              else{
                  int v = ui->pulseSpinBox->value();
@@ -419,7 +425,8 @@ void MainWindow::on_ySubButton_clicked()
                  data[6]=v>>8  & 0xff;
                  data[7]=v & 0xff;
                  qDebug()<<data;
-                 mySerialPort->write(data);
+                 //mySerialPort->write(data);
+                 sendData.append(data);
              }
 
          }
@@ -427,9 +434,6 @@ void MainWindow::on_ySubButton_clicked()
              QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
          }
 
-         executeCommandT->start(500);
-     }
-     enableToExecute=false;
 
 
 
@@ -437,11 +441,12 @@ void MainWindow::on_ySubButton_clicked()
 //x轴正向
 void MainWindow::on_xAddButton_clicked()
 {
-    if(enableToExecute){
+
         QByteArray sendText("\x4e\x01\x22",3);
         if(mySerialPort->isOpen()){
             if(ui->constantCheckBox->isChecked()){
-                mySerialPort->write(sendText);
+               // mySerialPort->write(sendText);
+                sendData.append(sendText);
             }
             else{
                 int v = ui->pulseSpinBox->value();
@@ -455,7 +460,8 @@ void MainWindow::on_xAddButton_clicked()
                 data[6]=v>>8  & 0xff;
                 data[7]=v & 0xff;
                 qDebug()<<data;
-                mySerialPort->write(data);
+               // mySerialPort->write(data);
+                sendData.append(data);
 
             }
 
@@ -463,20 +469,19 @@ void MainWindow::on_xAddButton_clicked()
         else{
             QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
         }
-        executeCommandT->start(500);
-    }
-    enableToExecute=false;
+
 
 
 }
 //x轴负向连续驱动
 void MainWindow::on_xSubButton_clicked()
 {
-  if(enableToExecute){
+
       QByteArray sendText("\x4e\x01\x23",3);
       if(mySerialPort->isOpen()){
            if(ui->constantCheckBox->isChecked()){
-               mySerialPort->write(sendText);
+              //mySerialPort->write(sendText);
+               sendData.append(sendText);
            }
            else{
                int v = ui->pulseSpinBox->value();
@@ -490,15 +495,14 @@ void MainWindow::on_xSubButton_clicked()
                data[6]=v>>8  & 0xff;
                data[7]=v & 0xff;
                qDebug()<<data;
-               mySerialPort->write(data);
+               //mySerialPort->write(data);
+               sendData.append(sendText);
            }
       }
       else{
           QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
       }
-      executeCommandT->start(500);
-  }
-  enableToExecute=false;
+
 
 
 
@@ -526,36 +530,33 @@ void MainWindow::on_setPulseButton_clicked()
 //减速停止
 void MainWindow::on_slowStop_clicked()
 {
-    if(enableToExecute){
+
         QByteArray sendText("\x56\x03\x26",3);
         if(mySerialPort->isOpen()){
-                 mySerialPort->write(sendText);
+                // mySerialPort->write(sendText);
+                 sendData.append(sendText);
         }
         else{
             QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
         }
 
-        executeCommandT->start(500);
-    }
-    enableToExecute=false;
 
 
 }
 //立即停止
 void MainWindow::on_nowStop_clicked()
 {
-   if(enableToExecute){
+
        QByteArray sendText("\x56\x03\x27",3);
       if(mySerialPort->isOpen()){
-               mySerialPort->write(sendText);
+               //mySerialPort->write(sendText);
+                 sendData.append(sendText);
       }
       else{
           QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
       }
 
-       executeCommandT->start(500);
-   }
-   enableToExecute=false;
+
 
 }
 
@@ -579,17 +580,17 @@ void MainWindow::on_updateSerialButton_released()
 //坐标追踪
 void MainWindow::on_followPoint_clicked()
 {
-    followCurrentPoint();
-    /*    isGetPoint=!isGetPoint;
+    QByteArray sendText=QByteArray("\x57\x03",2);
+       isGetPoint=!isGetPoint;
         if(isGetPoint){
-             receiveTimer->start(1000);
+            commonData.append(sendText);
              ui->followPoint->setText(QStringLiteral("取消追踪"));
         }
         else{
+             commonData.clear();
              ui->followPoint->setText(QStringLiteral("坐标追踪"));
-            receiveTimer->stop();
-        }
-        */
+
+        } 
 }
 
 //关闭窗口
@@ -724,7 +725,8 @@ void MainWindow::on_motorSpeed_triggered()
             data[2]=v>>8  & 0xff;
             data[3]=v & 0xff;
             qDebug()<<data;
-            mySerialPort->write(data);
+           // mySerialPort->write(data);
+            sendData.append(data);
 
    }
    else{
@@ -917,27 +919,33 @@ void MainWindow::on_actionShowFunction_triggered()
     ui->functionDockWidget2->show();
 }
 //获取当前位置坐标
+//实现队列模式的消息发送机制-------------------------------------------------------------------------->
 void MainWindow::followCurrentPoint()
 {
-    qDebug()<<"location followed successful";
-    QByteArray sendText=QByteArray("\x57\x03",2);
-    if(mySerialPort->isOpen()){
-             mySerialPort->write(sendText);
-    }
-    else{
-        QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-    }
+    qDebug()<<"follow execute successful---------------------------------->";
+   if(!sendData.isEmpty() && isOpenSerial){
+       mySerialPort->write(sendData.first());
+       qDebug()<< "sendData is ----------------->" + sendData[0];
+       sendData.removeFirst();
+
+   }
+   else if(!commonData.isEmpty() && isOpenSerial){
+       mySerialPort->write(commonData.first());
+   }
 
 }
 //判断是否可以执行当前命令
- void MainWindow::enabledExecute()
+ void MainWindow::isMySerialOpen()
  {
-   //  enableToExecute=false;
-   //  qDebug()<<"current state is false";
-   //  if(!executeCommandT->isSingleShot()){
-         qDebug()<<"current state is true";
-         enableToExecute=true;
-         executeCommandT->stop();
+     isOpenSerial=false;
+     ui->serialCB->setEnabled(true);
+     ui->baudRateCB->setEnabled(true);
+     ui->checkCB->setEnabled(true);
+     ui->updateSerialButton->setEnabled(true);
+     ui->dataBitCB->setEnabled(true);
+     ui->stopBitCB->setEnabled(true);
+     ui->openSerial->setText(QStringLiteral("打开串口"));
+     ui->statusBar->showMessage(QStringLiteral("端口关闭"));
+     receiveTimer->stop();
 
-    // }
  }
