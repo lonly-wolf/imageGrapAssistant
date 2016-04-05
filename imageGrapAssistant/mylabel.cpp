@@ -1,4 +1,4 @@
-#include "mylabel.h"
+﻿#include "mylabel.h"
 #include<QDebug>
 #include<QMouseEvent>
 #include<QPainter>
@@ -66,7 +66,7 @@ void myLabel::paintEvent(QPaintEvent *event)
     pointPainter.drawPoint(RTPPoint);
 
     pointPainter.end();
-    qDebug("paintEvent");
+    qDebug("paintEvent" + event->isAccepted());
 
 
 }

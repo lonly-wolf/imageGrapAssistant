@@ -17,12 +17,14 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     mylabel.cpp \
     myimage.cpp \
-    aboutdialog.cpp
+    aboutdialog.cpp \
+    motordrive.cpp
 
 HEADERS  += mainwindow.h \
     mylabel.h \
     myimage.h \
-    aboutdialog.h
+    aboutdialog.h \
+    motordrive.h
 
 FORMS    += mainwindow.ui \
     aboutdialog.ui

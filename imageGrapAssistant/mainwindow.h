@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include"mylabel.h"
 #include "myimage.h"
+#include"motordrive.h"
 #include<aboutdialog.h>
 
 class QSerialPort;
@@ -49,7 +50,7 @@ private slots:
     void on_motorSpeed_triggered();
     void on_saveCommand_clicked();
     void on_actionShowFunction_triggered(); //调用工作台
-
+    void on_constantCheckBox_clicked();
     void isMySerialOpen();
 
 private:
@@ -74,18 +75,16 @@ private:
     QHBoxLayout *hboxLayOut2;
     myImage *myImageList[16][16];
     QDockWidget *dockInsert;
+    motorDrive *myMotorDrive;
     int picImageRow;
     int picImageColumn;
     char pulseNumber[7];
-    int currentPulse;
     bool issetPulse;
-    bool clearPosition; //坐标清零
-    bool findPosition; //已到达零点
     bool isGetPoint;  //判断是否获取当前坐标
-    bool enableToExecute;
     bool isPositionData;
     QByteArray tempRequestData;
     int motorSpeed;
+    int dataLength;
 
     void scanAvaliableSerial(); //扫描可用串口
     void initImageWidget(int x,int y); //初始化x*y的widget
@@ -94,15 +93,9 @@ private:
     void readPicLocation();//读取图片坐标信息
     void saveCommandText();//保存命令终端命令
     void initCommandText();//初始化命令中断
-    void followCurrentPoint();//获取当前位置坐标
 
 protected:
     void closeEvent(QCloseEvent *event);
-
-
-
-
-
 };
 
 #endif // MAINWINDOW_H

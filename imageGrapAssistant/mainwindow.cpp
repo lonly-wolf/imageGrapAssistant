@@ -26,54 +26,45 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     //实例化
     ui->setupUi(this);
-    ui->groupBox_3->hide();
     mySerialPort=new QSerialPort(this);
-    receiveTimer=new QTimer(this);
-    sendTimer=new QTimer(this);
+    sendTimer=new QTimer(this); //判断是否连续发送
     mySettingRead=new QSettings(this);
     mySettingSave=new QSettings(this);
+    myMotorDrive=new motorDrive(this);
     myDialog=new aboutDialog(this);
+    dockInsert = new QDockWidget(QStringLiteral("开发者工具"), this); //命令调试助手
     picLabel=new myLabel;
     picImage=new myImage(ui->imageWidget);
+
     vboxLayOut=new QVBoxLayout(ui->widget);
     gridLayout=new QGridLayout(ui->imageWidget);
     vboxLayOut2=new QVBoxLayout;
     hboxLayOut2=new QHBoxLayout;
-    dockInsert = new QDockWidget(QStringLiteral("开发者工具"), this); //命令调试助手
+
+
     //初始化
-    enableToExecute=true; //判断是否可以被执行
     this->setMinimumSize(QSize(1345,748));
-    clearPosition=false;
-    findPosition=false;
+    dockInsert->close(); //隐藏开发者模式dock
+    picImage->hide();//隐藏图像列表
+    dataLength=0;
     isGetPoint=false;
     isPositionData=false;
     motorSpeed=300; //后期通过QSettings初始化该速度
-    dockInsert->close();
     QSettings mySettingsRead; //不加参数表明采用系统默认路径 windows下为注册表 linux下为......
     ui->pulseSpinBox->setEnabled(false);
-    picImage->hide();
-    currentPulse=ui->pulseSpinBox->value();
     isOpenSerial=false;
     issetPulse=false;
-    vboxLayOut->addWidget(picLabel);
-    ui->widget->setLayout(vboxLayOut); //实时位置图形显示
     ui->functionDockWidget2->setMinimumSize(QSize(340,768));
-   // ui->functionDockWidget2->setMaximumSize(QSize(340,743));
-    //ui->homeButton_2->setStyleSheet("border:2px groove gray;border-radius:10px;padding:2px 4px;");
     ui->updateSerialButton->setStyleSheet("border:2px groove gray;border-radius:10px;padding:2px 4px;");
     ui->setPulseButton->setStyleSheet("border:2px groove gray;border-radius:10px;padding:2px 4px;");
+    vboxLayOut->addWidget(picLabel);
+    ui->widget->setLayout(vboxLayOut); //虚拟化坐标显示
     //绑定信号槽
-   // connect(receiveTimer,SIGNAL(timeout()),this,SLOT(updateDate()));
     connect(mySerialPort,SIGNAL(aboutToClose()),this,SLOT(isMySerialOpen()));//串口状态监测
-    connect(mySerialPort,SIGNAL(readyRead()),this,SLOT(updateDate())); //实时数据刷新
-    connect(receiveTimer,SIGNAL(timeout()),this,SLOT(followCurrentPoint())); //实时刷新坐标
-   // connect(executeCommandT,SIGNAL(timeout()),this,SLOT(enabledExecute())); //实时刷新坐标
-    //方法调用
-    scanAvaliableSerial();
-    ui->groupBox_3->show();
-    //记忆模式
+    connect(mySerialPort,SIGNAL(readyRead()),this,SLOT(updateDate())); //接收数据槽函数
+    //程序记忆设置
     bool ok;
-    QPoint lastPoint=mySettingsRead.value("pos").toPoint();
+    QPoint lastPoint=mySettingsRead.value("pos").toPoint();//设置上次窗口位置
     //设置记忆模式
     ui->serialCB->setCurrentText(mySettingsRead.value("serial").toString());
     ui->baudRateCB->setCurrentText(mySettingsRead.value("baudRate").toString());
@@ -82,25 +73,26 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->stopBitCB->setCurrentText(mySettingsRead.value("stopBit").toString());
     ui->pulseSpinBox->setValue(mySettingsRead.value("pulseValue").toInt(&ok));
     ui->constantCheckBox->setChecked(mySettingsRead.value("isConstant").toBool());
-    motorSpeed=mySettingsRead.value("motorSpeed").toInt(&ok);
-    //this->move(lastPoint);
-    picImageRow=mySettingsRead.value("picImageRow").toInt(&ok);
+    motorSpeed=mySettingsRead.value("motorSpeed").toInt(&ok); //设置上次电机速度
+    //this->move(lastPoint);//设置上次窗口位置
+    picImageRow=mySettingsRead.value("picImageRow").toInt(&ok);//设置上次m*n图像显示模式
     picImageColumn=mySettingsRead.value("picImageColumn").toInt(&ok);
     if(picImageRow==0 || picImageColumn==0){
         picImageRow=4;
         picImageColumn=4;
     }
+
     initImageWidget(picImageRow,picImageColumn); //初始化imageWidget
     ui->groupBox_3->hide();
     initCommandText(); //初始化命令行模式
-    picLabel->setCurrentPoint(&QPoint(50,50));
+    picLabel->setCurrentPoint(&QPoint(0,0));//设置虚拟化坐标起始点位置
+    scanAvaliableSerial();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
     delete mySerialPort;
-    delete receiveTimer;
     delete sendTimer;
     delete mySettingRead;
     delete mySettingSave;
@@ -109,15 +101,16 @@ MainWindow::~MainWindow()
     delete hboxLayOut2;
     delete myDialog;
     delete dockInsert;
+    delete myMotorDrive;
 
 }
 
 //打开串口
 void MainWindow::on_openSerial_clicked()
 {
-
     QString currentString=ui->openSerial->text();
     if(!isOpenSerial){
+         myMotorDrive->initSerialPort(mySerialPort); //初始化我的驱动
          ui->serialCB->setEnabled(false);
          ui->baudRateCB->setEnabled(false);
          ui->checkCB->setEnabled(false);
@@ -125,7 +118,6 @@ void MainWindow::on_openSerial_clicked()
          ui->dataBitCB->setEnabled(false);
          ui->stopBitCB->setEnabled(false);
          isOpenSerial=true;
-         receiveTimer->start(1000); //开启消息发送timer------------------------------------------------->
          ui->openSerial->setText(QStringLiteral("关闭串口"));
          mySerialPort->setPortName(ui->serialCB->currentText());
          mySerialPort->open(QIODevice::ReadWrite);
@@ -178,26 +170,10 @@ void MainWindow::on_openSerial_clicked()
               break;
           }
           //初始化电机速度
-          if(mySerialPort->isOpen()){
-                   int v = motorSpeed;
-                   QByteArray data("\x00\x00\x00\x00",4);
-                   data[0]=0x4a;
-                   data[1]=0x0f;
-                   data[2]=v>>8  & 0xff;
-                   data[3]=v & 0xff;
-                   qDebug()<<data;
-                  // mySerialPort->write(data);
-                   sendData.append(data);
-
-          }
-          else{
-              QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-          }
-
-
-         ui->statusBar->showMessage(QStringLiteral("正在监听端口...."));
+          myMotorDrive->setMotorSpeed(motorSpeed);
+          ui->statusBar->showMessage(QStringLiteral("正在监听端口...."));
     }
-    else if(isOpenSerial){
+    else{
         isOpenSerial=false;
         ui->serialCB->setEnabled(true);
         ui->baudRateCB->setEnabled(true);
@@ -208,31 +184,22 @@ void MainWindow::on_openSerial_clicked()
         ui->openSerial->setText(QStringLiteral("打开串口"));
         ui->statusBar->showMessage(QStringLiteral("端口关闭"));
         mySerialPort->close();
-        receiveTimer->stop();
-
     }
 }
 
-//发送数据
+//发送数据(只针对开发者模式有效)
 void MainWindow::on_sendData_clicked()
 {
-  //  QByteArray sendText=ui->sendContext->toPlainText().toLocal8Bit();
-      QByteArray sendText=ui->sendContextBox->currentText().toLocal8Bit();
-
+    QByteArray sendText=ui->sendContextBox->currentText().toLocal8Bit();
     if(mySerialPort->isOpen()){
         if(ui->isHexSend){
-            //十六进制发送
-           // mySerialPort->write(QByteArray::fromHex(sendText));
-            sendData.append(QByteArray::fromHex(sendText));
-
+            //十六进制发送 
+          mySerialPort->write(QByteArray::fromHex(sendText));
         }
         else{
             //非十六进制发送
-           // mySerialPort->write(sendText);
-            sendData.append(sendText);
-
+            mySerialPort->write(sendText);
         }
-
     }
     else{
         QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
@@ -245,64 +212,52 @@ void MainWindow::on_sendData_clicked()
     else{
         sendTimer->stop();
     }
-
 }
-//串口信号接收
-//timer控制信号发送间隔
 //接收数据
 void MainWindow::updateDate()
 {
-
     if(mySerialPort->isOpen()){
         requestData=mySerialPort->readAll();
-
         if(ui->showHex->isChecked()){
             ui->statusBar->showMessage(requestData.toHex());
-            ui->showLabel->setText("d:" + requestData.toHex());
-          //  QMessageBox::warning(this,"hi",requestData.toHex());
+            ui->showLabel->setText("Respo:" + requestData.toHex());
+            qDebug()<<requestData.toHex();
         }
         else{
             ui->statusBar->showMessage(requestData,0);
-
+            ui->showLabel->setText("Respo:" + requestData);
         }
-        //执行虚拟化坐标转换
+        //执行虚拟化坐标转换------------------------>(添加起始结束校验位)
         if(requestData[0]=='\x09'){
             isPositionData=true;
+            dataLength=0;
               }
-
         if(isPositionData==true){
             tempRequestData.append(requestData);
+            dataLength++;
         }
 
             int x=0,y=0;
-            if(requestData[0]=='\x57'){
+            if(requestData[0]=='\x57' && dataLength==9){
                  QMessageBox::warning(this,"hi",tempRequestData.toHex());
-                x=tempRequestData[3]*16*16+tempRequestData[4];
-                y=tempRequestData[7]*16*16+tempRequestData[8];
+                x=(tempRequestData[3] & 0x0f) *16*16+(tempRequestData[3] & 0xf0)*16*16*16 + (tempRequestData[4] & 0x0f)+(tempRequestData[4] & 0xf0)*16 ;
+                y=(tempRequestData[7] & 0x0f) *16*16+(tempRequestData[7] & 0xf0)*16*16*16 + (tempRequestData[8] & 0x0f)+(tempRequestData[8] & 0xf0)*16 ;
                 picLabel->setCurrentPoint(&QPoint(y/25,y/25));
                 qDebug()<<x;
                 qDebug()<<y;
                 qDebug()<<tempRequestData;
                 tempRequestData.clear();
                 isPositionData=false;
+                dataLength=0;
                 QMessageBox::warning(this,"stop","point location is arrived!",QMessageBox::Yes);
             }
 
+        //坐标清零后重新给定速度------------------>(添加起始结束校验位)
+        if(requestData[1]=='\x4c' ){
+            QMessageBox::warning(this,"stop","homeSet",QMessageBox::Yes);
 
-        //坐标清零后重新给定速度
-        if(requestData[0]=='\x4c' && requestData.size()==1 ){
-            qDebug()<<"position clearlyyyyyyyy--------------------";
-            requestData.clear();
-               QMessageBox::warning(this,"WARING",QStringLiteral("坐标已清零"));
-                     int v = motorSpeed;
-                     QByteArray data("\x00\x00\x00\x00",4);
-                     data[0]=0x4a;
-                     data[1]=0x0f;
-                     data[2]=v>>8  & 0xff;
-                     data[3]=v & 0xff;
-                     qDebug()<<data;
-                    // mySerialPort->write(data);
-                     sendData.append(data);
+               myMotorDrive->setMotorSpeed(motorSpeed);
+               requestData.clear();
         }
     }
 }
@@ -336,7 +291,6 @@ void MainWindow::on_debugAction_triggered()
 
 void MainWindow::initImageWidget(int x, int y)
 {
-
     for(int i=0;i<x;i++){
         for(int j=0;j<y;j++){
             myImageList[i][j]=new myImage(this);
@@ -348,164 +302,28 @@ void MainWindow::initImageWidget(int x, int y)
 //寻找home
 void MainWindow::on_homeButton_clicked()
 {
-
-        qDebug()<<"home is execute";
-        QByteArray data("\x54\x02",2);
-        if(mySerialPort->isOpen()){
-
-            //mySerialPort->write(data);
-            sendData.append(data);
-        }
-        else{
-            QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-        }
-
-
-
-
-
+myMotorDrive->homeSet();
 }
 //y轴正向连续驱动
 void MainWindow::on_yAddButton_clicked()
 {
-
-        QByteArray sendText("\x4e\x02\x22",3);
-
-        if(mySerialPort->isOpen()){
-            //连续驱动
-            if(ui->constantCheckBox->isChecked()){
-               // mySerialPort->write(sendText);
-                sendData.append(sendText);
-            }
-            else{
-                int v = ui->pulseSpinBox->value();
-                QByteArray data("\x00\x00\x00\x00\x00\x00\x00\x00",8);
-                data[0]=0x4d;
-                data[1]=0x02;
-                data[2]=0x08;
-                data[3]=0x20;
-                data[4]=v>>24 & 0xff;
-                data[5]=v>>16 & 0xff;
-                data[6]=v>>8  & 0xff;
-                data[7]=v & 0xff;
-                qDebug()<<data;
-                //mySerialPort->write(data);
-                sendData.append(data);
-            }
-
-        }
-        else{
-            QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-        }
-
-
-
-
+    myMotorDrive->moveYPlus();
 }
 
 //y轴负向连续驱动
 void MainWindow::on_ySubButton_clicked()
 {
-
-         QByteArray sendText("\x4e\x02\x23",3);
-         if(mySerialPort->isOpen()){
-             if(ui->constantCheckBox->isChecked()){
-                // mySerialPort->write(sendText);
-                 sendData.append(sendText);
-             }
-             else{
-                 int v = ui->pulseSpinBox->value();
-                 QByteArray data("\x00\x00\x00\x00\x00\x00\x00\x00",8);
-                 data[0]=0x4d;
-                 data[1]=0x02;
-                 data[2]=0x08;
-                 data[3]=0x21;
-                 data[4]=v>>24 & 0xff;
-                 data[5]=v>>16 & 0xff;
-                 data[6]=v>>8  & 0xff;
-                 data[7]=v & 0xff;
-                 qDebug()<<data;
-                 //mySerialPort->write(data);
-                 sendData.append(data);
-             }
-
-         }
-         else{
-             QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-         }
-
-
-
-
+    myMotorDrive->moveYMinus();
 }
 //x轴正向
 void MainWindow::on_xAddButton_clicked()
 {
-
-        QByteArray sendText("\x4e\x01\x22",3);
-        if(mySerialPort->isOpen()){
-            if(ui->constantCheckBox->isChecked()){
-               // mySerialPort->write(sendText);
-                sendData.append(sendText);
-            }
-            else{
-                int v = ui->pulseSpinBox->value();
-                QByteArray data("\x00\x00\x00\x00\x00\x00\x00\x00",8);
-                data[0]=0x4d;
-                data[1]=0x01;
-                data[2]=0x08;
-                data[3]=0x20;
-                data[4]=v>>24 & 0xff;
-                data[5]=v>>16 & 0xff;
-                data[6]=v>>8  & 0xff;
-                data[7]=v & 0xff;
-                qDebug()<<data;
-               // mySerialPort->write(data);
-                sendData.append(data);
-
-            }
-
-        }
-        else{
-            QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-        }
-
-
-
+    myMotorDrive->moveXPlus();
 }
 //x轴负向连续驱动
 void MainWindow::on_xSubButton_clicked()
 {
-
-      QByteArray sendText("\x4e\x01\x23",3);
-      if(mySerialPort->isOpen()){
-           if(ui->constantCheckBox->isChecked()){
-              //mySerialPort->write(sendText);
-               sendData.append(sendText);
-           }
-           else{
-               int v = ui->pulseSpinBox->value();
-               QByteArray data("\x00\x00\x00\x00\x00\x00\x00\x00",8);
-               data[0]=0x4d;
-               data[1]=0x01;
-               data[2]=0x08;
-               data[3]=0x21;
-               data[4]=v>>24 & 0xff;
-               data[5]=v>>16 & 0xff;
-               data[6]=v>>8  & 0xff;
-               data[7]=v & 0xff;
-               qDebug()<<data;
-               //mySerialPort->write(data);
-               sendData.append(sendText);
-           }
-      }
-      else{
-          QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-      }
-
-
-
-
+    myMotorDrive->moveXMinus();
 }
 //设置脉冲
 void MainWindow::on_setPulseButton_clicked()
@@ -517,7 +335,7 @@ void MainWindow::on_setPulseButton_clicked()
         ui->setPulseButton->setText(QStringLiteral("保存设置"));
         buttonPal.setColor(QPalette::ButtonText,Qt::red);
         ui->setPulseButton->setPalette(buttonPal);
-        currentPulse=ui->pulseSpinBox->value();
+        myMotorDrive->setPulse(ui->pulseSpinBox->value());
     }
     else{
         ui->pulseSpinBox->setEnabled(false);
@@ -530,41 +348,17 @@ void MainWindow::on_setPulseButton_clicked()
 //减速停止
 void MainWindow::on_slowStop_clicked()
 {
-
-        QByteArray sendText("\x56\x03\x26",3);
-        if(mySerialPort->isOpen()){
-                // mySerialPort->write(sendText);
-                 sendData.append(sendText);
-        }
-        else{
-            QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-        }
-
-
-
+    myMotorDrive->slowStop();
 }
 //立即停止
 void MainWindow::on_nowStop_clicked()
 {
-
-       QByteArray sendText("\x56\x03\x27",3);
-      if(mySerialPort->isOpen()){
-               //mySerialPort->write(sendText);
-                 sendData.append(sendText);
-      }
-      else{
-          QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
-      }
-
-
-
+    myMotorDrive->nowStop();
 }
-
+//串口数据更新
 void MainWindow::on_updateSerialButton_clicked()
 {
     scanAvaliableSerial();
-    qDebug()<<"scanning------";
-
 }
 //串口刷新按下
 void MainWindow::on_updateSerialButton_pressed()
@@ -575,24 +369,19 @@ void MainWindow::on_updateSerialButton_pressed()
 void MainWindow::on_updateSerialButton_released()
 {
     ui->updateSerialButton->setStyleSheet("border:2px groove gray;border-radius:10px;padding:2px 4px;background-color:rgb(255,255,255)");
-
 }
 //坐标追踪
 void MainWindow::on_followPoint_clicked()
 {
-    QByteArray sendText=QByteArray("\x57\x03",2);
        isGetPoint=!isGetPoint;
+        myMotorDrive->followPoint(isGetPoint);
         if(isGetPoint){
-            commonData.append(sendText);
              ui->followPoint->setText(QStringLiteral("取消追踪"));
         }
         else{
-             commonData.clear();
              ui->followPoint->setText(QStringLiteral("坐标追踪"));
-
         } 
 }
-
 //关闭窗口
 void MainWindow::closeEvent(QCloseEvent *event)
 {
@@ -609,9 +398,8 @@ void MainWindow::closeEvent(QCloseEvent *event)
     mySettingsWrite.setValue("picImageRow",picImageRow);
     mySettingsWrite.setValue("picImageColumn",picImageColumn);
     mySettingsWrite.setValue("motorSpeed",motorSpeed);
-
-   savePicLocation();
-   saveCommandText(); //保存命令终端所使用的指令到本地
+    savePicLocation();
+    saveCommandText(); //保存命令终端所使用的指令到本地
     QMessageBox::StandardButton result;
     result=QMessageBox::warning(this,QStringLiteral("离开"),QStringLiteral("确定要离开吗?"),QMessageBox::Yes|QMessageBox::No);
     if(result==QMessageBox::Yes){
@@ -704,12 +492,10 @@ void MainWindow::on_saveAllImage_triggered()
         }
     }
     ui->statusBar->showMessage(QStringLiteral("图片保存成功!"));
-
 }
 //关于信息
 void MainWindow::on_aboutAction_triggered()
 {
-
     myDialog->show();
 }
 //电机速率设置
@@ -718,24 +504,12 @@ void MainWindow::on_motorSpeed_triggered()
     bool ok;
    motorSpeed=QInputDialog::getInt(this,QStringLiteral("请输入电机速度"),QStringLiteral("请输入电机速度"),motorSpeed,1,500,1,&ok);
    if(mySerialPort->isOpen()){
-            int v = motorSpeed;
-            QByteArray data("\x00\x00\x00\x00",4);
-            data[0]=0x4a;
-            data[1]=0x0f;
-            data[2]=v>>8  & 0xff;
-            data[3]=v & 0xff;
-            qDebug()<<data;
-           // mySerialPort->write(data);
-            sendData.append(data);
-
+            myMotorDrive->setMotorSpeed(motorSpeed);
    }
    else{
        QMessageBox::warning(this,QStringLiteral("警告"),QStringLiteral("请打开串口"),QMessageBox::Ok);
    }
 }
-
-
-
 //保存图片坐标
 void MainWindow::savePicLocation()
 {
@@ -749,7 +523,6 @@ void MainWindow::savePicLocation()
                 k++;
             }
         }
-
     }
     else if(picImageRow==2 && picImageColumn==2){
         int k=1;
@@ -760,7 +533,6 @@ void MainWindow::savePicLocation()
                 k++;
             }
         }
-
     }
     else if(picImageRow==3 && picImageColumn==3){
         int k=1;
@@ -794,9 +566,7 @@ void MainWindow::savePicLocation()
             }
         }
     }
-
 }
-
 //读取图片坐标信息
 void MainWindow::readPicLocation()
 {
@@ -855,11 +625,8 @@ void MainWindow::readPicLocation()
                 k++;
             }
         }
-
     }
 }
-
-
 
 //保存指令
 void MainWindow::on_saveCommand_clicked()
@@ -895,7 +662,7 @@ void MainWindow::saveCommandText()
     file.flush();
     file.close();
 }
-//初始化命令中断
+//初始化开发者模式命令记忆
 void MainWindow::initCommandText()
 {
     QString savePath=QCoreApplication::applicationDirPath();
@@ -906,10 +673,9 @@ void MainWindow::initCommandText()
     if(file.exists()){
          file.open(QIODevice::ReadOnly|QIODevice::Text);
          }
-     QTextStream fileIn(&file);
-     while(!fileIn.atEnd())
-     ui->sendContextBox->addItem(fileIn.readLine());
-
+    QTextStream fileIn(&file);
+    while(!fileIn.atEnd())
+    ui->sendContextBox->addItem(fileIn.readLine());
     file.flush();
     file.close();
     }
@@ -918,25 +684,11 @@ void MainWindow::on_actionShowFunction_triggered()
 {
     ui->functionDockWidget2->show();
 }
-//获取当前位置坐标
-//实现队列模式的消息发送机制-------------------------------------------------------------------------->
-void MainWindow::followCurrentPoint()
-{
-    qDebug()<<"follow execute successful---------------------------------->";
-   if(!sendData.isEmpty() && isOpenSerial){
-       mySerialPort->write(sendData.first());
-       qDebug()<< "sendData is ----------------->" + sendData[0];
-       sendData.removeFirst();
-
-   }
-   else if(!commonData.isEmpty() && isOpenSerial){
-       mySerialPort->write(commonData.first());
-   }
-
-}
-//判断是否可以执行当前命令
+//串口关闭自动触发函数
  void MainWindow::isMySerialOpen()
  {
+     myMotorDrive->isMySerialOpen(false);
+     qDebug()<<"MainWindow closed!";
      isOpenSerial=false;
      ui->serialCB->setEnabled(true);
      ui->baudRateCB->setEnabled(true);
@@ -946,6 +698,14 @@ void MainWindow::followCurrentPoint()
      ui->stopBitCB->setEnabled(true);
      ui->openSerial->setText(QStringLiteral("打开串口"));
      ui->statusBar->showMessage(QStringLiteral("端口关闭"));
-     receiveTimer->stop();
-
  }
+ //连续发送指令
+void MainWindow::on_constantCheckBox_clicked()
+{
+    if(ui->constantCheckBox->isChecked()){
+        myMotorDrive->isConstantSend(true);
+    }
+    else{
+         myMotorDrive->isConstantSend(false);
+    }
+}

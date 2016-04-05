@@ -1,5 +1,6 @@
 #include "aboutdialog.h"
 #include "ui_aboutdialog.h"
+#include<QDebug>
 
 aboutDialog::aboutDialog(QWidget *parent) :
     QMainWindow(parent),
@@ -17,5 +18,5 @@ aboutDialog::~aboutDialog()
 
 void aboutDialog::on_label_9_linkActivated(const QString &link)
 {
-
+    qDebug()<<link;
 }
