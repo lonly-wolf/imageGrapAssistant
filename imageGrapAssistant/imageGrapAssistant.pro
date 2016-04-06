@@ -18,16 +18,21 @@ SOURCES += main.cpp\
     mylabel.cpp \
     myimage.cpp \
     aboutdialog.cpp \
-    motordrive.cpp
+    motordrive.cpp \
+    picedit.cpp \
+    mypen.cpp
 
 HEADERS  += mainwindow.h \
     mylabel.h \
     myimage.h \
     aboutdialog.h \
-    motordrive.h
+    motordrive.h \
+    picedit.h \
+    mypen.h
 
 FORMS    += mainwindow.ui \
-    aboutdialog.ui
+    aboutdialog.ui \
+    picedit.ui
 
 RESOURCES += \
     images.qrc

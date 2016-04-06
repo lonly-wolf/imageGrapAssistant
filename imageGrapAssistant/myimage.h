@@ -1,6 +1,7 @@
 ﻿#ifndef MYIMAGE_H
 #define MYIMAGE_H
 #include <QWidget>
+#include<picedit.h>
 
 class QImage;
 class QLabel;
@@ -16,7 +17,7 @@ public:
     explicit myImage(QWidget *parent = 0);
     ~myImage();
     void myImageInit();
-    QImage getMyImage();
+    QImage * getMyImage();
     void setMyImage(QImage *image);
     QPoint getImageLocation();
     void setXPoint(int x);
@@ -31,6 +32,8 @@ signals:
 
 public slots:
     void changeMyPoint();
+    void editPicture(); //编辑图片
+    void savePicture();//保存图片
 
 private:
     QImage *image;
@@ -41,12 +44,16 @@ private:
     QGridLayout *gridLayout;
     QHBoxLayout *hboxLayout;
     QVBoxLayout *vboxLayout;
+    QVBoxLayout *vboxLayout2;
     QPushButton *changePoint;
-    QImage image2; //控件背景图
+    QImage *myimage; //控件背景图
     QPoint *ImageCenterP;
+    picEdit *picedit;
     bool isClickChange;
 
     void setImageLocation(); //设置图像采集中心
+    void contextMenuEvent(QContextMenuEvent *event); //右键菜单
+
 
 
 

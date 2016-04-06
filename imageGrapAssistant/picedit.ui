@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>picEdit</class>
+ <widget class="QMainWindow" name="picEdit">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1307</width>
+    <height>776</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>:/image2.png</normaloff>:/image2.png</iconset>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0">
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="mouseTracking">
+       <bool>true</bool>
+      </property>
+      <property name="acceptDrops">
+       <bool>true</bool>
+      </property>
+      <property name="autoFillBackground">
+       <bool>false</bool>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOn</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOn</enum>
+      </property>
+      <property name="sizeAdjustPolicy">
+       <enum>QAbstractScrollArea::AdjustToContents</enum>
+      </property>
+      <property name="widgetResizable">
+       <bool>false</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>1270</width>
+         <height>596</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </item>
+    <item row="1" column="0">
+     <widget class="QGroupBox" name="toolsBox">
+      <property name="minimumSize">
+       <size>
+        <width>1261</width>
+        <height>80</height>
+       </size>
+      </property>
+      <property name="acceptDrops">
+       <bool>true</bool>
+      </property>
+      <property name="autoFillBackground">
+       <bool>true</bool>
+      </property>
+      <property name="title">
+       <string>工具栏</string>
+      </property>
+      <widget class="QWidget" name="layoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>590</x>
+         <y>0</y>
+         <width>71</width>
+         <height>71</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QDial" name="imageRotate">
+          <property name="maximumSize">
+           <size>
+            <width>50</width>
+            <height>64</height>
+           </size>
+          </property>
+          <property name="maximum">
+           <number>720</number>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="autoFillBackground">
+           <bool>false</bool>
+          </property>
+          <property name="text">
+           <string> rotate:0</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QPushButton" name="pushButton">
+       <property name="geometry">
+        <rect>
+         <x>490</x>
+         <y>20</y>
+         <width>75</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>放大</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="pushButton_2">
+       <property name="geometry">
+        <rect>
+         <x>670</x>
+         <y>20</y>
+         <width>75</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>缩小</string>
+       </property>
+      </widget>
+      <widget class="QSlider" name="horizontalSlider">
+       <property name="geometry">
+        <rect>
+         <x>990</x>
+         <y>30</y>
+         <width>281</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="minimum">
+        <number>-7</number>
+       </property>
+       <property name="maximum">
+        <number>7</number>
+       </property>
+       <property name="value">
+        <number>0</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_2">
+       <property name="geometry">
+        <rect>
+         <x>930</x>
+         <y>30</y>
+         <width>54</width>
+         <height>12</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>显示比例</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_3">
+       <property name="geometry">
+        <rect>
+         <x>1000</x>
+         <y>50</y>
+         <width>16</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>-</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_4">
+       <property name="geometry">
+        <rect>
+         <x>1260</x>
+         <y>50</y>
+         <width>21</width>
+         <height>16</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>+</string>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="penButton">
+       <property name="geometry">
+        <rect>
+         <x>330</x>
+         <y>30</y>
+         <width>75</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>画笔</string>
+       </property>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1307</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_f">
+    <property name="title">
+     <string>&amp;File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="action_Outport"/>
+    <addaction name="action_Print"/>
+   </widget>
+   <widget class="QMenu" name="menu_Operate">
+    <property name="title">
+     <string>&amp;Edit</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menu_About">
+    <property name="title">
+     <string>&amp;About</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>高级</string>
+    </property>
+    <widget class="QMenu" name="menu_2">
+     <property name="title">
+      <string>亮度调节</string>
+     </property>
+     <addaction name="lightAdd15"/>
+     <addaction name="lightAdd30"/>
+     <addaction name="lightAdd45"/>
+     <addaction name="lightAdd65"/>
+     <addaction name="lightAdd85"/>
+     <addaction name="lightAdd100"/>
+    </widget>
+    <addaction name="grayAction"/>
+    <addaction name="menu_2"/>
+    <addaction name="action_5"/>
+    <addaction name="mohuAction"/>
+    <addaction name="sharpAction"/>
+    <addaction name="action_8"/>
+    <addaction name="action_9"/>
+    <addaction name="action_10"/>
+    <addaction name="warmAction2"/>
+   </widget>
+   <addaction name="menu_f"/>
+   <addaction name="menu_Operate"/>
+   <addaction name="menu_About"/>
+   <addaction name="menu"/>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>&amp;Save</string>
+   </property>
+  </action>
+  <action name="actionSave_as">
+   <property name="text">
+    <string>Save &amp;as</string>
+   </property>
+  </action>
+  <action name="action_Outport">
+   <property name="text">
+    <string>&amp;Outport</string>
+   </property>
+  </action>
+  <action name="action_Print">
+   <property name="text">
+    <string>&amp;Print</string>
+   </property>
+  </action>
+  <action name="grayAction">
+   <property name="text">
+    <string>灰度调节</string>
+   </property>
+  </action>
+  <action name="coldAction">
+   <property name="text">
+    <string>冷色调节</string>
+   </property>
+  </action>
+  <action name="action_5">
+   <property name="text">
+    <string>饱和度调节</string>
+   </property>
+  </action>
+  <action name="mohuAction">
+   <property name="text">
+    <string>模糊化</string>
+   </property>
+  </action>
+  <action name="sharpAction">
+   <property name="text">
+    <string>锐化</string>
+   </property>
+  </action>
+  <action name="action_8">
+   <property name="text">
+    <string>金属化</string>
+   </property>
+  </action>
+  <action name="action_9">
+   <property name="text">
+    <string>边框设置</string>
+   </property>
+  </action>
+  <action name="action_10">
+   <property name="text">
+    <string>模糊边框</string>
+   </property>
+  </action>
+  <action name="lightAdd15">
+   <property name="text">
+    <string>+15%</string>
+   </property>
+  </action>
+  <action name="lightAdd30">
+   <property name="text">
+    <string>+30%</string>
+   </property>
+  </action>
+  <action name="lightAdd45">
+   <property name="text">
+    <string>+45%</string>
+   </property>
+  </action>
+  <action name="lightAdd65">
+   <property name="text">
+    <string>+65%</string>
+   </property>
+  </action>
+  <action name="lightAdd85">
+   <property name="text">
+    <string>+85%</string>
+   </property>
+  </action>
+  <action name="lightAdd100">
+   <property name="text">
+    <string>+100%</string>
+   </property>
+  </action>
+  <action name="action20">
+   <property name="text">
+    <string>20</string>
+   </property>
+  </action>
+  <action name="action30">
+   <property name="text">
+    <string>30</string>
+   </property>
+  </action>
+  <action name="action_12">
+   <property name="text">
+    <string/>
+   </property>
+  </action>
+  <action name="warmAction2">
+   <property name="text">
+    <string>暖色调节</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <resources>
+  <include location="images.qrc"/>
+ </resources>
+ <connections/>
+</ui>

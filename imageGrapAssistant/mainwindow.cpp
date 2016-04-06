@@ -55,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent) :
     isOpenSerial=false;
     issetPulse=false;
     ui->functionDockWidget2->setMinimumSize(QSize(340,768));
+     ui->functionDockWidget2->setMaximumSize(QSize(360,2048));
     ui->updateSerialButton->setStyleSheet("border:2px groove gray;border-radius:10px;padding:2px 4px;");
     ui->setPulseButton->setStyleSheet("border:2px groove gray;border-radius:10px;padding:2px 4px;");
     vboxLayOut->addWidget(picLabel);
@@ -485,8 +486,8 @@ void MainWindow::on_saveAllImage_triggered()
     for(int i=0;i<picImageRow;i++){
         for(int j=0;j<picImageColumn;j++){
             int randomNum=k;                          //(i+1)*picImageRow*picImageColumn+j;
-            QImage outputImage=myImageList[i][j]->getMyImage();
-            outputImage.save(saveImage + QDateTime::currentDateTime().toString("hh-mm-ss-ddd") + QString::number(randomNum,10) + ".png");
+            QImage *outputImage=myImageList[i][j]->getMyImage();
+            outputImage->save(saveImage + QDateTime::currentDateTime().toString("hh-mm-ss-ddd") + QString::number(randomNum,10) + ".png");
             qDebug()<<saveImage + QDateTime::currentDateTime().toString("hh-mm-ss-ddd") + QString::number(randomNum,10) + ".png";
             ui->statusBar->showMessage(QStringLiteral("系统正在保存图片，请稍后......共 ") + QString::number(picImageColumn*picImageRow,10)+QStringLiteral(" 张，正在保存图片：")+ QString::number(k++,10));
         }

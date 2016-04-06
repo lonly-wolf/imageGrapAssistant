@@ -165,10 +165,10 @@
        <bool>true</bool>
       </property>
       <property name="acceptDrops">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <property name="autoFillBackground">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <property name="floating">
        <bool>false</bool>
@@ -185,6 +185,9 @@
           <width>331</width>
           <height>743</height>
          </rect>
+        </property>
+        <property name="autoFillBackground">
+         <bool>true</bool>
         </property>
         <property name="title">
          <string>功能区</string>

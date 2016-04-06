@@ -7,10 +7,16 @@
 #include<QPushButton>
 #include<QVBoxLayout>
 #include<QEvent>
+#include<QMenu>
+#include<QDebug>
+#include<QFileDialog>
+#include<QMessageBox>
 
 myImage::myImage(QWidget *parent) : QWidget(parent)
 {
 
+  myimage=new QImage;
+  picedit=new picEdit(this);
   image=new QImage;
   label=new QLabel;
   imageLabel=new QLabel;
@@ -19,6 +25,7 @@ myImage::myImage(QWidget *parent) : QWidget(parent)
   gridLayout=new QGridLayout;
   hboxLayout=new QHBoxLayout;
   vboxLayout=new QVBoxLayout;
+  vboxLayout2=new QVBoxLayout;
   changePoint=new QPushButton;
   ImageCenterP=new QPoint;
   QObject::connect(changePoint,SIGNAL(pressed()),this,SLOT(changeMyPoint()));
@@ -39,18 +46,20 @@ myImage::~myImage()
     delete hboxLayout;
     delete imageLabel;
     delete vboxLayout;
+    delete vboxLayout2;
     delete changePoint;
     delete ImageCenterP;
+    delete myimage;
 
 }
 //初始化自定义控件
 void myImage::myImageInit()
 {
-    image2.load(":525897.png");
+    myimage->load(":347143.jpg");
     label->setText(QStringLiteral("图像中心:"));
     //label->resize(QSize(50,30));
-    imageLabel->setPixmap(QPixmap::fromImage(image2.scaled(imageLabel->width(),imageLabel->height(),Qt::KeepAspectRatio)));
-    imageLabel->setAutoFillBackground(true);
+    imageLabel->setPixmap(QPixmap::fromImage(myimage->scaled(imageLabel->width(),imageLabel->height(),Qt::KeepAspectRatio)));
+    //imageLabel->setAutoFillBackground(true);
     pointXSpinBox->setValue(20);
     pointYSpinBox->setValue(30);
     ImageCenterP->setX(20);
@@ -62,8 +71,10 @@ void myImage::myImageInit()
     hboxLayout->addWidget(changePoint);
     vboxLayout->addWidget(imageLabel);
     vboxLayout->addLayout(hboxLayout);
-    gridLayout->addLayout(vboxLayout,0,0);
+    gridLayout->addLayout(vboxLayout,0,0,Qt::AlignCenter);
     this->setLayout(gridLayout);
+
+
 
 }
 //改变坐标
@@ -77,7 +88,6 @@ void myImage::changeMyPoint()
           changePoint->setText(QStringLiteral("保存"));
           buttonPal.setColor(QPalette::ButtonText,Qt::red);
           changePoint->setPalette(buttonPal);
-
     }
     else{
         pointXSpinBox->setReadOnly(true);
@@ -86,20 +96,18 @@ void myImage::changeMyPoint()
           buttonPal.setColor(QPalette::ButtonText,Qt::black);
           changePoint->setPalette(buttonPal);
           setImageLocation();
-
     }
-
-
 }
-QImage myImage::getMyImage()
+QImage * myImage::getMyImage()
 {
-    return image2;
+    return myimage;
 
 }
 
 void myImage::setMyImage(QImage *image)
 {
-    image2=*image;
+    myimage=image;
+    imageLabel->setPixmap(QPixmap::fromImage(myimage->scaled(imageLabel->width(),imageLabel->height(),Qt::KeepAspectRatio)));
 
 }
 //设置图像采集中心
@@ -134,5 +142,36 @@ QPoint myImage::getImageLocation()
     return *ImageCenterP;
 }
 
+void  myImage::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMenu *menu=new QMenu(this);
+    QAction *create=new QAction(QStringLiteral("编辑"),this);
+    QAction *save=new QAction(QStringLiteral("另存为"),this);
+    menu->addAction(create);
+    menu->addAction(save);
+    menu->move(cursor().pos());
+    connect(create,SIGNAL(triggered(bool)),this,SLOT(editPicture()));
+    connect(save,SIGNAL(triggered(bool)),this,SLOT(savePicture()));
+    menu->show();
 
+}
+ //编辑图片
+void myImage::editPicture()
+{
+    picedit->show();
+    picedit->drawLabel->setImageByImage(this->getMyImage());
+    picedit->myImage=*this->getMyImage();
+    picedit->drawLabel->resize(this->getMyImage()->width(),this->getMyImage()->height());
 
+}
+
+//保存图片
+void myImage::savePicture()
+{
+    QString saveName=QFileDialog::getSaveFileName(this,QStringLiteral("Please open a picture"),"","Images (*.png *.bmp *.jpg *.tif *.GIF)");
+    qDebug()<<saveName;
+    if(!saveName.isNull()){
+      this->getMyImage()->save(saveName);
+        QMessageBox::warning(this,"save","save successful");
+    }
+}
